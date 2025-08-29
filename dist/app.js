@@ -28,17 +28,13 @@ function createApp() {
     app.use((0, cookie_parser_1.default)());
     app.use((0, morgan_1.default)('dev'));
     app.use('/api', rateLimit_1.apiLimiter);
-    // Serve demo client
     app.use('/demo', express_1.default.static(path_1.default.join(__dirname, '..', 'public', 'demo')));
-    // Health check
     app.get('/health', (_req, res) => res.json({ ok: true }));
-    // API routes
     app.use('/api/auth', auth_routes_1.default);
     app.use('/api/users', user_routes_1.default);
     app.use('/api/credits', credit_routes_1.default);
     app.use('/api/chat', chat_routes_1.default);
     app.use('/api/match', match_routes_1.default);
-    // 404 + error handler
     app.use(errorHandler_1.notFound);
     app.use(errorHandler_1.errorHandler);
     return app;

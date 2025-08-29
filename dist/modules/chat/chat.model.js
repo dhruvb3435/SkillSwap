@@ -36,11 +36,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Message = exports.ChatRoom = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const ChatRoomSchema = new mongoose_1.Schema({
+    chatId: { type: String, unique: true, required: true, index: true },
     participants: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, index: true }],
     lastMessageAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 const MessageSchema = new mongoose_1.Schema({
-    chatId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'ChatRoom', required: true, index: true },
+    chatId: { type: String, required: true, index: true },
     sender: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
     content: { type: String, required: true },
 }, { timestamps: true });

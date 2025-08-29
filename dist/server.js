@@ -17,18 +17,14 @@ async function bootstrap() {
     const io = new socket_io_1.Server(server, {
         cors: { origin: process.env.CORS_ORIGIN?.split(',') || '*' }
     });
-    // Make io accessible in routes
     app.set('io', io);
-    // Sockets
     (0, chat_gateway_1.registerChatGateway)(io);
     (0, rtc_gateway_1.registerRtcGateway)(io);
     server.listen(env_1.env.PORT, () => {
-        // eslint-disable-next-line no-console
-        console.log(`🚀 Server listening on http://localhost:${env_1.env.PORT}`);
+        console.log(`Server listening on ${env_1.env.PORT}`);
     });
 }
 bootstrap().catch((err) => {
-    // eslint-disable-next-line no-console
     console.error('Fatal bootstrap error:', err);
     process.exit(1);
 });

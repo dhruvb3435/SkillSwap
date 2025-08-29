@@ -70,7 +70,15 @@ router.put('/:id', auth_1.requireAuth, (0, validate_1.validateBody)(dto_1.Update
 });
 router.get('/', async (req, res, next) => {
     try {
-        const users = await service.searchBySkill(req.query.skill);
+        if (req.query.skill) {
+            const users = await service.searchBySkill(req.query.skill);
+            return res.json(users);
+        }
+        if (req.query.name) {
+            const users = await service.searchByName(req.query.name);
+            return res.json(users);
+        }
+        const users = await service.searchBySkill(undefined);
         res.json(users);
     }
     catch (err) {
