@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkillSwap WebRTC Demo</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui; margin: 1rem; }
+      input, button { padding: .5rem; margin-right: .5rem; }
+      video { width: 45%; background: #111; margin-right: 1rem; }
+      .row { display: flex; gap: 1rem; align-items: center; margin-bottom: .5rem; }
+    </style>
+  </head>
+  <body>
+    <h1>WebRTC Demo</h1>
+    <div class="row">
+      <input id="room" placeholder="Room ID" />
+      <button id="join">Join</button>
+      <button id="leave">Leave</button>
+      <button id="start">Start Call</button>
+    </div>
+    <div class="row">
+      <video id="local" autoplay playsinline muted></video>
+      <video id="remote" autoplay playsinline></video>
+    </div>
+    <pre id="log"></pre>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const log = (...args) => { document.getElementById('log').textContent += args.join(' ') + '\n'; console.log(...args); };
+      const ioRoot = io(); // default namespace for rtc:* events
+      const state = {
+        pc: null,
+        localStream: null,
+        roomId: null,
+      };
+
+      document.getElementById('join').onclick = () => {
+        state.roomId = document.getElementById('room').value || 'test-room';
+        ioRoot.emit('rtc:join', { roomId: state.roomId });
+        log('Joined room', state.roomId);
+      };
+      document.getElementById('leave').onclick = () => {
+        if (state.roomId) { ioRoot.emit('rtc:leave', { roomId: state.roomId }); }
+        if (state.pc) { state.pc.close(); state.pc = null; }
+        log('Left room');
+      };
+
+      document.getElementById('start').onclick = async () => {
+        await start();
+      };
+
+      ioRoot.on('rtc:peer-joined', ({ peerId }) => log('Peer joined', peerId));
+      ioRoot.on('rtc:offer', async ({ from, sdp }) => {
+        await ensurePeer();
+        await state.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        const ans = await state.pc.createAnswer();
+        await state.pc.setLocalDescription(ans);
+        ioRoot.emit('rtc:answer', { roomId: state.roomId, sdp: ans });
+      });
+      ioRoot.on('rtc:answer', async ({ from, sdp }) => {
+        await state.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      });
+      ioRoot.on('rtc:ice-candidate', async ({ from, candidate }) => {
+        if (candidate) try { await state.pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch (e) { log('ICE add error', e); }
+      });
+
+      async function start() {
+        await ensurePeer();
+        const offer = await state.pc.createOffer();
+        await state.pc.setLocalDescription(offer);
+        ioRoot.emit('rtc:offer', { roomId: state.roomId || 'test-room', sdp: offer });
+      }
+
+      async function ensurePeer() {
+        if (state.pc) return;
+        state.pc = new RTCPeerConnection({
+          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        });
+        state.pc.onicecandidate = (ev) => {
+          ioRoot.emit('rtc:ice-candidate', { roomId: state.roomId || 'test-room', candidate: ev.candidate });
+        };
+        state.pc.ontrack = (ev) => {
+          document.getElementById('remote').srcObject = ev.streams[0];
+        };
+        state.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('local').srcObject = state.localStream;
+        for (const track of state.localStream.getTracks()) {
+          state.pc.addTrack(track, state.localStream);
+        }
+      }
+    </script>
+  </body>
+</html>
