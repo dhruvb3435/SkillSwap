@@ -3,8 +3,8 @@ services:
     name: skillswap-backend
     env: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: npm install
+    startCommand: npm run dev
     autoDeploy: true
     envVars:
       - key: NODE_ENV
