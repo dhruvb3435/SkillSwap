@@ -13,7 +13,7 @@ function requireAuth(req, _res, next) {
     const token = h.slice(7);
     try {
         const payload = jsonwebtoken_1.default.verify(token, env_1.env.JWT_SECRET);
-        req.user = { id: payload.id, email: payload.email };
+        req.user = { id: payload.id, email: payload.email, name: payload.name };
         return next();
     }
     catch {
